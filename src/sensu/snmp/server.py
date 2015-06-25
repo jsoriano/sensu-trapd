@@ -29,7 +29,12 @@ class SensuTrapServer(object):
         LOG.debug("SensuTrapServer: Initialized")
 
     def _configure_mibs(self):
-        self._mibs = MibResolver(self._config['mibs']['paths'], self._config['mibs']['mibs'])
+        try:
+            self._mibs = MibResolver(self._config['mibs']['paths'], self._config['mibs']['mibs'])
+        except Exception as e:
+            LOG.debug(str(e))
+            raise
+
 
     def _parse_trap_handlers(self, trap_file):
         # TODO: Support multiple trap files
@@ -43,6 +48,8 @@ class SensuTrapServer(object):
                 trap_handler = self._load_trap_handler(trap_handler_id, trap_handler_config)
                 trap_handlers[trap_handler_id] = trap_handler
                 LOG.debug("SensuTrapServer: Parsed trap handler: %s" % (trap_handler_id))
+        except Exception as e:
+            LOG.debug(str(e))
         finally:
             fh.close()
         return trap_handlers
