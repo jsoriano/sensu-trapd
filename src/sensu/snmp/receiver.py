@@ -124,13 +124,12 @@ class TrapReceiver(object):
         Callback function for receiving notifications
         """
         trap_oid = None
-        trap_name = None
         trap_args = dict()
 
         try:
             # get the source address for this notification
             transportDomain, trap_source = snmp_engine.msgAndPduDsp.getTransportInfo(stateReference)
-            log.debug("TrapReceiver: Notification received from %s, %s" % (trap_source[0], trap_source[1]))
+            log.debug("TrapReceiver: Notification received from %s on port %s" % (trap_source[0], trap_source[1]))
 
             # read all the varBinds
             for oid, val in varBinds:
@@ -142,10 +141,11 @@ class TrapReceiver(object):
                     trap_oid = val
                     # load the mib symbol/modname for the trap oid
                     (trap_symbol_name, trap_mod_name) = self._mibs.lookup_oid(trap_oid)
+                    log.debug("TrapReceiver: Trap type: %s::%s" % (trap_symbol_name, trap_mod_name))
                 else:
                     # all other values should be converted to mib symbol/modname
                     # and put in the trap_data dict
-                    trap_arg_oid = oid
+                    trap_arg_oid = self._mibs.lookup(module, symbol)
                     # convert value
                     trap_arg_value = self._mibs.lookup_value(module, symbol, val)
                     trap_args[trap_arg_oid] = trap_arg_value
