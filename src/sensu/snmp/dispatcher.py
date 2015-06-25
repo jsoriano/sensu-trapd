@@ -69,9 +69,6 @@ class TrapEventDispatcher(object):
         self._remote_port = int(self._config['dispatcher']['port'])
         self._socket_timeout = int(self._config['dispatcher']['timeout'])
         self._socket = None
-
-        # Connect to Sensu
-        self._connect()
         log.debug("TrapEventDispatcher: Initialized")
 
     def _connect(self):
@@ -102,44 +99,39 @@ class TrapEventDispatcher(object):
 
     def _close(self):
         if self._socket is not None:
+            log.debug("TrapEventDispatcher: Closing connection to %s:%d" % (self._remote_host, self._remote_port))
             self._socket.close()
         self._socket = None
 
     def dispatch(self, event):
-        # TODO: send event!
         log.debug("TrapEventDispatcher: Dispatching TrapEvent: %r" % (event))
         try:
-            # try to (re)connect
-            if self._socket is None:
-                log.debug("TrapEventDispatcher: Socket is not connected. Reconnecting")
-                self._connect()
+            self._connect()
 
-            if self._socket is not None:
-                # Send event
-                self._socket.sendall(event.to_json())
+            # Send event
+            self._socket.sendall(event.to_json())
 
-                if self._config['dispatcher']['check_response']:
-                    # Receive event confirmation
-                    self._socket.setblocking(0)
-                    timer = int(time.time())
-                    data = ""
-                    while (int(time.time()) - timer) < self._socket_timeout:
-                        try:
-                            data = self._socket.recv(512)
-                            break
-                        except socket.error, e:
-                            pass
-                    self._socket.setblocking(1)
-                    if len(data) <= 0 or data.strip() != "ok":
-                        log.error("TrapEventDispatcher: Error dispatching event. Response was: %s" % (data))
-                        return False
+            if self._config['dispatcher']['check_response']:
+                # Receive event confirmation
+                self._socket.setblocking(0)
+                timer = int(time.time())
+                data = ""
+                while (int(time.time()) - timer) < self._socket_timeout:
+                    try:
+                        data = self._socket.recv(512)
+                        break
+                    except socket.error, e:
+                        pass
+                self._socket.setblocking(1)
+                if len(data) <= 0 or data.strip() != "ok":
+                    log.error("TrapEventDispatcher: Error dispatching event. Response was: %s" % (data))
+                    return False
 
-                # TODO: send event!
-                log.info("TrapEventDispatcher: Dispatched TrapEvent: %r" % (event))
+            log.info("TrapEventDispatcher: Dispatched TrapEvent: %r" % (event))
 
-                return True
-
+            return True
         except:
-            self._close()
             log.exception("TrapEventDispatcher: Error dispatching event")
+        finally:
+            self._close()
         return False
