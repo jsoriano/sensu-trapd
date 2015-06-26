@@ -128,9 +128,9 @@ class TrapReceiver(object):
 
         log.debug("TrapReceiver: Initialized SNMPv3 Auth")
 
-    def _create_trap(self, trap_oid, trap_arguments, trap_properties):
+    def _create_trap(self, trap_type, trap_oid, trap_arguments, trap_properties):
         # initialize trap
-        return Trap(trap_oid, trap_arguments, **trap_properties)
+        return Trap(trap_type, trap_oid, trap_arguments, **trap_properties)
 
     def _notification_callback(self, snmp_engine, stateReference, contextEngineId, contextName, varBinds, cbCtx):
         """
@@ -154,7 +154,8 @@ class TrapReceiver(object):
                     trap_oid = val
                     # load the mib symbol/modname for the trap oid
                     (trap_symbol_name, trap_mod_name) = self._mibs.lookup_oid(trap_oid)
-                    log.debug("TrapReceiver: Trap type: %s::%s" % (trap_symbol_name, trap_mod_name))
+                    trap_type = "%s::%s" % (trap_symbol_name, trap_mod_name)
+                    log.debug("TrapReceiver: Trap type: %s" % trap_type)
                 else:
                     # all other values should be converted to mib symbol/modname
                     # and put in the trap_data dict
@@ -176,7 +177,7 @@ class TrapReceiver(object):
             trap_properties['domain'] = trap_source_domain
 
             # create trap
-            trap = self._create_trap(trap_oid, trap_args, trap_properties)
+            trap = self._create_trap(trap_type, trap_oid, trap_args, trap_properties)
 
             # now that everything has been parsed, trigger the callback
             self._callback(trap)
