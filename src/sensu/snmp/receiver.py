@@ -9,10 +9,23 @@ import pysnmp.entity.rfc3413.mibvar
 from pysnmp.carrier.asynsock.dgram import udp
 from pysnmp.entity.rfc3413 import ntfrcv
 from pysnmp.proto.api import v2c
+from pyasn1.error import PyAsn1Error
 
 from sensu.snmp.log import log as log
 from sensu.snmp.trap import Trap
 from sensu.snmp.util import *
+
+
+class SafeUdpTransport(udp.UdpTransport):
+    """
+    This class ignores parsing errors to avoid that the SNMP engine dies
+    when a wrong or empty datagram is received
+    """
+    def handle_read(self):
+        try:
+            return udp.UdpTransport.handle_read(self)
+        except PyAsn1Error:
+            log.debug("TrapReceiver: Wrong datagram received")
 
 
 class TrapReceiverThread(threading.Thread):
@@ -75,7 +88,7 @@ class TrapReceiver(object):
 
     def _configure_udp_transport(self, listen_address, listen_port):
         pysnmp.entity.config.addSocketTransport(self._snmp_engine, udp.domainName,
-            udp.UdpTransport().openServerMode((listen_address, listen_port)))
+            SafeUdpTransport().openServerMode((listen_address, listen_port)))
         log.info("TrapReceiver: Initialized SNMP UDP Transport on %s:%s" % (listen_address, listen_port))
 
     def _configure_tcp_transport(self, listen_address, listen_port):
