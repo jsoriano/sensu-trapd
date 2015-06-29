@@ -2,20 +2,31 @@ import json
 
 
 class TrapEvent(object):
+    def __init__(self, event, substitutions):
+        self.substitutions = substitutions
+        self.event = self._apply_substitutions(dict(event))
 
-    EVENT_SEVERITY = {"CRITICAL": 2, "WARNING": 1, "OK": 0}
-
-    def __init__(self, name, output, status, handlers):
-        self.name = name
-        self.output = output
-        self.status = status
-        self.handlers = handlers
+    def _apply_substitutions(self, template):
+        if isinstance(template, str):
+            return template.format(**self.substitutions)
+        if isinstance(template, list):
+            return [
+                self._apply_substitutions(value)
+                for value in template
+            ]
+        if isinstance(template, dict):
+            return dict(
+                (
+                    self._apply_substitutions(key),
+                    self._apply_substitutions(value),
+                )
+                for (key, value) in template.iteritems()
+            )
+        else:
+            return template
 
     def to_json(self):
-        return json.dumps({'name': self.name,
-                           'output': self.output,
-                           'status': self.status,
-                           'handlers': self.handlers})
+        return json.dumps(self.event)
 
     def __repr__(self):
-        return "<TrapEvent name:'%s' >" % (self.name)
+        return "<TrapEvent name:'%s' >" % (self.event['name'])

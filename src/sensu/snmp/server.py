@@ -71,28 +71,10 @@ class SensuTrapServer(object):
                 trap_arg_type_oid = self._mibs.lookup(trap_arg_type_module, trap_arg_type_symbol)
                 trap_args[trap_arg_type_oid] = trap_arg
 
-                #LOG.debug("%s arg=%s type=%s::%s (%r)" % (trap_handler_id,
-                #                                            trap_arg,
-                #                                            trap_arg_type_module,
-                #                                            trap_arg_type_symbol,
-                #                                            trap_arg_type_oid))
-
-        # Parse event info
-        event_name = trap_handler_config['event']['name']
-        event_output = trap_handler_config['event']['output']
-        event_handlers = trap_handler_config['event']['handlers']
-        event_severity = parse_event_severity(trap_handler_config['event']['severity'])
-
-        # TODO: parse predicates
-
         # Initialize TrapHandler
         trap_handler = TrapHandler(trap_type_oid,
-                                    trap_args,
-                                    event_name,
-                                    event_output,
-                                    event_handlers,
-                                    event_severity,
-                                    None)
+                                   trap_args,
+                                   trap_handler_config['event'])
         return trap_handler
 
     def _dispatch_trap_event(self, trap_event):
