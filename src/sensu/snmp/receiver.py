@@ -25,7 +25,9 @@ class SafeUdpTransport(udp.UdpTransport):
         try:
             return udp.UdpTransport.handle_read(self)
         except PyAsn1Error:
-            log.debug("TrapReceiver: Wrong datagram received")
+            # Logging something here floods the logs if some port scanning
+            # is done
+            pass
 
 
 class TrapReceiverThread(threading.Thread):
